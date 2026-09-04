@@ -1,28 +1,17 @@
-# Security Policy
+# PulseNet Security Policy
 
-## Supported version
+PulseNet is designed to minimize unnecessary attack surface. No web application can honestly guarantee that it can never be hacked.
 
-The `main` branch is the active version.
+## Security rules
+- Keep secrets and database credentials server-side only.
+- Use HTTPS in production.
+- Restrict CORS to the deployed frontend origin.
+- Keep CSP and security headers enabled at the web-server layer.
+- Validate and bound every API input on the server.
+- Use parameterized SQL queries only.
+- Add authentication, authorization, rate limiting and CSRF protection before exposing private/admin APIs.
+- Do not store Wi-Fi passwords, browser passwords or unnecessary personal data.
+- Keep dependencies patched and review third-party services.
 
-## Reporting a vulnerability
-
-Please do not publish exploitable details in a public issue. Use GitHub's private vulnerability reporting/security-advisory mechanism when available for the repository, or contact the repository owner privately through GitHub.
-
-When reporting, include the affected file/feature, impact, reproduction steps, and a suggested mitigation if known. Do not include passwords, tokens, private keys, or other secrets.
-
-## Security boundaries
-
-PulseNet is primarily a static browser application. The browser's same-origin and Content Security Policy controls are part of its security boundary. Third-party network endpoints can change independently and are not controlled by this repository.
-
-Never add credentials or sensitive data to the frontend. Anything shipped in JavaScript can be inspected by visitors.
-
-## Deployment checklist
-
-- Serve the site over HTTPS.
-- Keep the Content Security Policy restrictive.
-- Do not add wildcard network permissions unless required.
-- Do not store secrets in frontend code.
-- Review third-party endpoints and their terms before production use.
-- Keep dependencies minimal and updated.
-- Add server-side rate limiting if a custom backend is introduced.
-- Validate and authorize every server-side request if a backend is introduced.
+## Reporting
+Please report suspected vulnerabilities privately through GitHub's security reporting mechanism when available. Do not include passwords, tokens, API keys or other secrets in a report.
