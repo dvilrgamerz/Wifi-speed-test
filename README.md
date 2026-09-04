@@ -1,74 +1,110 @@
-# PulseNet v3 — Full-Stack Internet Diagnostics ⚡
+# PulseNet v4 — Internet Diagnostics ⚡
 
-PulseNet v3 evolves the browser speed test into a full-stack diagnostics platform while keeping the frontend fast and privacy-conscious.
+PulseNet is a free, privacy-first browser speed test and connection diagnostics platform. The current web stack is intentionally simple: **HTML + CSS + vanilla JavaScript + Python/Flask**. SQL and PHP are removed from the active architecture.
+
+## What works
+- Live download and upload measurement against the self-hosted Python endpoint
+- Repeated latency probes with jitter and packet-loss estimation
+- Server-side metric validation and connection quality score
+- Gaming, streaming and video-call grades
+- Browser network information when the browser exposes it
+- Local test history (up to 30 results)
+- Copy result and JSON export
+- Native share support where available
+- Responsive mobile/desktop UI
+- PWA manifest/service worker
+- Security headers, request limits and rate limiting
+- Docker deployment
+- Automated Python regression tests and CI
 
 ## Architecture
 
 ```text
-PulseNet v3
-├── Frontend: HTML5 + CSS3 + Vanilla JavaScript
-├── Python API: Flask diagnostics / health / scoring
-├── PHP API: lightweight compatibility endpoint
-├── SQL: test results, server registry, service events
-└── Java: native integration/health model for future clients
+PulseNet
+├── index.html                 # accessible app shell
+├── assets/
+│   ├── styles.css             # responsive UI
+│   └── app.js                 # speed-test engine + dashboard
+├── backend/python/
+│   ├── app.py                 # Flask API + static frontend server
+│   ├── requirements.txt
+│   └── test_app.py
+├── backend/java/              # optional future native integration
+├── Dockerfile
+└── docker-compose.yml
 ```
 
-## Dashboard
-- Live download and upload throughput
-- Latency, jitter and packet-loss sampling
-- Connection quality score
-- Gaming / streaming / video-call grades
-- Browser network intelligence
-- Public IP / ISP / region enrichment
-- Test history and trends
-- Share, copy and JSON export
-- Server/connection status
-- Responsive premium dashboard
-- Settings and diagnostics explanations
+There is **no SQL database and no PHP runtime** in the active web application. Results are intentionally stored only in the user's browser.
 
-## Backend
-The Python service in `backend/python/` exposes `/api/health` and `/api/analyze`. It validates metric ranges, uses production-safe defaults, limits request bodies and sends defensive headers.
+## Run locally
 
-The PHP service in `backend/php/` provides a small compatibility health endpoint. It does not store credentials or accept arbitrary server-side commands.
+From the repository root:
 
-The SQL schema in `database/schema.sql` defines speed-test results, test servers and service events. Production database access must use parameterized queries and least-privilege credentials.
+```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
+python -m pip install -r backend/python/requirements.txt
+python backend/python/app.py
+```
 
-The Java source in `backend/java/` is intentionally lightweight: Java is useful for a future Android/native companion, not as an unnecessary web-server dependency.
+Open `http://127.0.0.1:8000`.
+
+### Run tests
+
+```bash
+python -m pip install pytest
+cd backend/python
+pytest -q
+```
+
+### Docker
+
+```bash
+docker compose up --build
+```
+
+Then open `http://localhost:8000`.
+
+## Configuration
+
+Use `backend/.env.example` as a reference. Important environment variables include:
+
+- `HOST` — bind address; use `0.0.0.0` in a container.
+- `PORT` — HTTP port, default `8000`.
+- `CORS_ORIGINS` — optional explicit origins for a separately hosted frontend. Same-origin deployment does not need CORS.
+- `TRUST_PROXY_HEADERS=1` — only when running behind a trusted reverse proxy that correctly sanitizes forwarding headers.
+- `RATE_LIMIT` / `RATE_WINDOW_SECONDS` — API rate-limit controls.
+- `MAX_SPEEDTEST_BYTES` — maximum single speed-test transfer.
 
 ## Security
-No application can honestly guarantee that it is impossible to hack. PulseNet reduces avoidable risk by keeping secrets out of the frontend, bounding API input, using security headers, limiting the backend surface and documenting a secure deployment boundary.
 
-Before production backend exposure, configure HTTPS, strict CORS, authentication/authorization for private endpoints, rate limiting, CSRF protection where applicable, secure cookies, parameterized SQL, dependency updates, monitoring and least-privilege database access.
+No application can honestly guarantee that it is impossible to hack. PulseNet reduces avoidable risk through a small attack surface, no database credentials, no PHP runtime, bounded request sizes, rate limiting, strict browser CSP, security headers, non-root Docker execution and automated tests.
 
-**Never commit `.env` files, passwords, API keys, private keys or tokens.** Use `backend/.env.example` as a template only.
+For public deployment:
+1. Put the service behind HTTPS.
+2. Keep `CORS_ORIGINS` explicit if cross-origin access is required.
+3. Only enable `TRUST_PROXY_HEADERS` behind a trusted proxy.
+4. Use a production WSGI server/reverse proxy rather than Flask's development server for serious public traffic.
+5. Keep dependencies updated and never commit secrets.
+6. Monitor abuse because a public speed-test endpoint can consume bandwidth.
 
-## Technology
-HTML5, CSS3, JavaScript, Python/Flask, PHP, SQL and Java are now represented with a real role in the architecture. The browser remains responsible for the actual controlled network measurement because it measures the user's browser-to-test-endpoint path.
+## Accuracy and privacy
 
-## Accuracy
-Results are estimates. Wi-Fi conditions, router load, device performance, VPNs, congestion, browser limits and endpoint distance can all affect measurements.
+Speed results are estimates of the browser-to-test-server path. Wi-Fi conditions, router load, device performance, VPNs, congestion and endpoint distance can change results. A normal website cannot reliably read Wi-Fi passwords, router administration data, channel information or signal strength.
+
+PulseNet does not ask for Wi-Fi credentials and does not require an account. History is local browser storage. The optional public-IP/ISP enrichment from earlier versions is intentionally not part of the new core test path.
+
+## Free deployment
+
+The software and its dependencies can be used without paid APIs. Hosting, a custom domain, bandwidth and some cloud providers may still have independent costs; the project does not require a paid API or database to run.
+
+See `docs/DEPLOY-FREE.md` for deployment guidance.
 
 ## Legal / responsible use
-PulseNet is independently designed and is not affiliated with Ookla or Speedtest. It does not intentionally copy proprietary code or branding. Review third-party service terms and applicable laws before commercial deployment. Only test networks and infrastructure you are authorized to test.
 
-## Local development
-Frontend:
-
-```bash
-python -m http.server 8000
-```
-
-Python API:
-
-```bash
-cd backend/python
-python -m venv .venv
-# activate .venv, then:
-pip install -r requirements.txt
-python app.py
-```
-
-For production, put the Python/PHP services behind a properly configured HTTPS reverse proxy and firewall. Do not expose development servers directly to the public internet.
+PulseNet is an independent project and is not affiliated with Ookla or Speedtest. Only test networks and infrastructure you are authorized to test. Review the terms of any hosting provider and applicable laws before public/commercial deployment.
 
 ## License
+
 MIT — see `LICENSE`.
