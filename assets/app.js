@@ -3,14 +3,15 @@
 const $ = id => document.getElementById(id);
 const CF_BASE = 'https://speed.cloudflare.com';
 const state = { busy:false, history:[], last:null, samples:[], apiBase:null, backend:'detecting' };
+const localApi = path => new URL(`api${path}`, document.baseURI).href;
 
 try { state.history = JSON.parse(localStorage.getItem('pulsenet-history') || '[]'); if (!Array.isArray(state.history)) state.history=[]; } catch { state.history=[]; }
 
-const toast = msg => { const el=$('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('show'),2200); };
-const progress = (n,label) => { $('bar').style.width=`${Math.max(0,Math.min(100,n))}%`; $('pct').textContent=`${Math.round(n)}%`; $('label').textContent=label; };
+const toast = msg => { const el=$('toast'); if(!el)return; el.textContent=msg; el.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('show'),2200); };
+const progress = (n,label) => { if($('bar'))$('bar').style.width=`${Math.max(0,Math.min(100,n))}%`; if($('pct'))$('pct').textContent=`${Math.round(n)}%`; if($('label'))$('label').textContent=label; };
 
 function chart(){
-  const c=$('chart'),ctx=c.getContext('2d'),w=c.clientWidth||600,h=110,d=devicePixelRatio||1;
+  const c=$('chart'); if(!c)return; const ctx=c.getContext('2d'),w=c.clientWidth||600,h=110,d=devicePixelRatio||1;
   c.width=w*d;c.height=h*d;ctx.setTransform(d,0,0,d,0,0);ctx.clearRect(0,0,w,h);
   if(state.samples.length<2)return;
   const max=Math.max(10,...state.samples);ctx.beginPath();
@@ -25,8 +26,9 @@ async function fetchWithTimeout(url,options={},ms=8000){
 
 async function detectBackend(){
   try{
-    const r=await fetchWithTimeout('/api/health',{},1800);
-    if(r.ok){const j=await r.json();if(j&&j.status==='ok'){state.apiBase='';state.backend='PulseNet Python';$('serverName').textContent='PulseNet Python';return;}}
+    const r=await fetchWithTimeout(localApi('/health'),{},1800);
+    const type=r.headers.get('content-type')||'';
+    if(r.ok&&type.includes('application/json')){const j=await r.json();if(j&&j.status==='ok'){state.apiBase='';state.backend='PulseNet Python';$('serverName').textContent='PulseNet Python';return;}}
   }catch{}
   state.apiBase=CF_BASE;state.backend='Cloudflare Edge';$('serverName').textContent='Cloudflare Edge';
 }
@@ -34,16 +36,16 @@ async function detectBackend(){
 const endpoint = path => state.apiBase ? `${state.apiBase}${path}` : `${CF_BASE}${path}`;
 
 async function latency(){
-  const values=[],total=8;
+  const values=[],total=6;
   for(let i=0;i<total;i++){
     const start=performance.now();
     try{
-      const r=await fetchWithTimeout(endpoint(`/__down?bytes=0&measId=${Date.now()}-${i}-${Math.random()}`),{},5000);
+      const r=await fetchWithTimeout(endpoint(`/__down?bytes=1&measId=${Date.now()}-${i}-${Math.random()}`),{},5000);
       if(r.ok){await r.arrayBuffer();values.push(performance.now()-start)}
     }catch{}
     progress(3+(i+1)/total*7,'Measuring latency');
   }
-  if(!values.length)throw Error('Latency test could not reach the test server.');
+  if(!values.length)throw Error('Test server is unreachable. Check your internet connection, then try again.');
   const ping=values.reduce((a,b)=>a+b,0)/values.length;
   const jitter=values.length>1?values.slice(1).reduce((a,v,i)=>a+Math.abs(v-values[i]),0)/(values.length-1):0;
   return {ping,jitter,loss:(total-values.length)/total*100};
@@ -67,7 +69,7 @@ async function download(){
 }
 
 async function upload(){
-  const bytes=16*1024*1024,data=new Uint8Array(bytes);
+  const bytes=8*1024*1024,data=new Uint8Array(bytes);
   for(let i=0;i<bytes;i+=65536)crypto.getRandomValues(data.subarray(i,Math.min(i+65536,bytes)));
   return await new Promise((resolve,reject)=>{
     const x=new XMLHttpRequest(),start=performance.now();x.open('POST',endpoint(`/__up?measId=${Date.now()}-${Math.random()}`));x.timeout=45000;
@@ -85,8 +87,7 @@ function localScore(ping,jitter,download,upload,loss){
 
 async function analyze(r){
   if(state.apiBase===''){
-    const res=await fetchWithTimeout('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(r)},5000);
-    if(res.ok)return res.json();
+    try{const res=await fetchWithTimeout(localApi('/analyze'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(r)},5000);if(res.ok)return res.json();}catch{}
   }
   const score=localScore(r.ping,r.jitter,r.download,r.upload,r.loss);
   return {score,grade:grade(score)};
@@ -103,7 +104,7 @@ function renderHealth(r){
 }
 
 function renderHistory(){
-  const body=$('history');if(!state.history.length){body.innerHTML='<tr><td colspan="6" class="empty">No tests yet.</td></tr>';return}
+  const body=$('history');if(!body)return;if(!state.history.length){body.innerHTML='<tr><td colspan="6" class="empty">No tests yet.</td></tr>';return}
   body.textContent='';state.history.slice(0,30).forEach(r=>{const tr=document.createElement('tr');[new Date(r.time).toLocaleString(),`${Number(r.ping).toFixed(1)} ms`,`${Number(r.jitter).toFixed(1)} ms`,`${Number(r.download).toFixed(1)} Mbps`,`${Number(r.upload).toFixed(1)} Mbps`,`${Number(r.score)}/100`].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td)});body.appendChild(tr)});
 }
 
