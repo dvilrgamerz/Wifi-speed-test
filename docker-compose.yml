@@ -1,0 +1,11 @@
+services:
+  pulsenet:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+      CORS_ORIGINS: http://localhost:8000
+      SERVER_REGION: Local
+    restart: unless-stopped
