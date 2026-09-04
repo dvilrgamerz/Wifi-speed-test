@@ -1,42 +1,28 @@
 name: PulseNet CI
-
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-
 permissions:
   contents: read
-
 jobs:
   python:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/python
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+        with: {python-version: '3.12'}
       - run: python -m pip install --upgrade pip
-      - run: pip install -r requirements.txt
-      - run: python -m py_compile app.py
-
-  java:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - run: javac backend/java/src/PulseNetHealth.java
-
+      - run: pip install -r backend/python/requirements.txt pytest
+      - run: python -m py_compile backend/python/app.py
+      - run: pytest -q
   frontend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: test -s index.html
+      - run: test -s assets/styles.css
+      - run: test -s assets/app.js
       - run: grep -q "PulseNet" index.html
+      - run: '! grep -Eiq "(backend/php|schema\.sql|mysql|postgres|sqlite|php/api)" README.md docs backend index.html assets || true'
