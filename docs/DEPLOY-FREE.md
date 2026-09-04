@@ -1,37 +1,48 @@
-# PulseNet v3 — Free deployment
+# PulseNet v4 — Free deployment
 
-PulseNet is designed so the core application can run without paid APIs or licenses.
+PulseNet's active web stack is **Python/Flask + HTML/CSS/vanilla JavaScript**. SQL and PHP are intentionally not required.
 
-## Frontend
+## Easiest local run
 
-The root `index.html` is static and can be served by GitHub Pages or another free static host.
-
-## Python API
-
-Run locally:
+From the repository root:
 
 ```bash
-cd backend/python
 python -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
-python app.py
+# Windows: .venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
+python -m pip install -r backend/python/requirements.txt
+python backend/python/app.py
 ```
 
-The API is intentionally small and can also be self-hosted on a machine you control.
+Open `http://127.0.0.1:8000`.
 
-## Database
+## Docker
 
-`database/schema.sql` contains the persistent schema. MySQL/MariaDB-compatible SQL is used by the current schema. A database is optional for the basic browser speed test.
+```bash
+docker compose up --build
+```
 
-## PHP
+Open `http://localhost:8000`.
 
-`backend/php/api.php` is a lightweight compatibility endpoint for PHP hosting. It is not a second copy of the Python business logic.
+The image runs as a non-root user and serves both the frontend and API from the same origin.
 
-## Java
+## Public deployment
 
-`backend/java/src/PulseNetHealth.java` is a dependency-free Java integration component. It can be used by a future native Android/client application without requiring a paid SDK.
+Use HTTPS and a production WSGI server/reverse proxy. Set:
+
+```text
+HOST=0.0.0.0
+PORT=8000
+CORS_ORIGINS=https://your-frontend.example
+SERVER_REGION=Your region
+```
+
+If frontend and API are same-origin, leave `CORS_ORIGINS` empty. Only set `TRUST_PROXY_HEADERS=1` when a trusted reverse proxy sanitizes `X-Forwarded-For`.
+
+## GitHub Pages note
+
+GitHub Pages can serve the static frontend, but it cannot run the Python API. A real speed test against PulseNet's self-hosted endpoint therefore needs a separate Python-capable host. Do not pretend a static page is connected to a backend that is not deployed.
 
 ## Cost boundary
 
-Software in this repository does not require a subscription, paid API key, or commercial SDK. Hosting, bandwidth, a custom domain, or a third-party provider may still have independent pricing.
+The application does not require a paid API, database, PHP runtime or commercial SDK. Hosting, bandwidth, a domain and some cloud providers can still have independent costs.
