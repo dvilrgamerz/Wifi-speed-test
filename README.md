@@ -1,60 +1,74 @@
-# PulseNet — Internet Speed Test ⚡
+# PulseNet v3 — Full-Stack Internet Diagnostics ⚡
 
-A polished, browser-based internet diagnostics project inspired by the category of tools such as Speedtest.net, but independently designed and implemented.
+PulseNet v3 evolves the browser speed test into a full-stack diagnostics platform while keeping the frontend fast and privacy-conscious.
 
-## Features
-- Download and upload throughput tests over HTTPS
-- Latency and jitter measurements
-- Connection-quality score and practical advice
-- Live animated gauge, progress meter, and throughput graph
-- Browser connection API information when supported
-- Optional public IP / ISP / region enrichment
-- Local test history stored only in the browser
-- Copy/share result and JSON export
-- Responsive mobile/desktop UI
-- Reduced-motion-friendly design
-- No login, password, Wi-Fi credentials, or account system
+## Architecture
 
-## Accuracy
-Browser speed tests measure the path between the browser and the selected test endpoint. Results can vary with Wi-Fi signal, router load, device load, browser limits, VPNs, congestion, and endpoint location. PulseNet does not guarantee an ISP's advertised speed.
+```text
+PulseNet v3
+├── Frontend: HTML5 + CSS3 + Vanilla JavaScript
+├── Python API: Flask diagnostics / health / scoring
+├── PHP API: lightweight compatibility endpoint
+├── SQL: test results, server registry, service events
+└── Java: native integration/health model for future clients
+```
+
+## Dashboard
+- Live download and upload throughput
+- Latency, jitter and packet-loss sampling
+- Connection quality score
+- Gaming / streaming / video-call grades
+- Browser network intelligence
+- Public IP / ISP / region enrichment
+- Test history and trends
+- Share, copy and JSON export
+- Server/connection status
+- Responsive premium dashboard
+- Settings and diagnostics explanations
+
+## Backend
+The Python service in `backend/python/` exposes `/api/health` and `/api/analyze`. It validates metric ranges, uses production-safe defaults, limits request bodies and sends defensive headers.
+
+The PHP service in `backend/php/` provides a small compatibility health endpoint. It does not store credentials or accept arbitrary server-side commands.
+
+The SQL schema in `database/schema.sql` defines speed-test results, test servers and service events. Production database access must use parameterized queries and least-privilege credentials.
+
+The Java source in `backend/java/` is intentionally lightweight: Java is useful for a future Android/native companion, not as an unnecessary web-server dependency.
 
 ## Security
-PulseNet intentionally avoids collecting passwords, Wi-Fi credentials, authentication tokens, or payment information. History is stored in browser `localStorage` only.
+No application can honestly guarantee that it is impossible to hack. PulseNet reduces avoidable risk by keeping secrets out of the frontend, bounding API input, using security headers, limiting the backend surface and documenting a secure deployment boundary.
 
-The page includes a restrictive Content Security Policy, `no-referrer`, `frame-ancestors 'none'`, `object-src 'none'`, `form-action 'none'`, HTTPS test endpoints, cache-busting requests, and no unnecessary server-side credential handling.
+Before production backend exposure, configure HTTPS, strict CORS, authentication/authorization for private endpoints, rate limiting, CSRF protection where applicable, secure cookies, parameterized SQL, dependency updates, monitoring and least-privilege database access.
 
-**Never commit secrets.** Do not add API keys, database passwords, private tokens, certificates, `.env` files, or credentials. If a backend is added later, keep secrets in environment variables and add authentication, authorization, rate limiting, input validation, CSRF protections where applicable, secure cookies, and privacy-conscious logging.
+**Never commit `.env` files, passwords, API keys, private keys or tokens.** Use `backend/.env.example` as a template only.
 
 ## Technology
-The current app is deliberately client-first:
-- HTML5
-- CSS3
-- Vanilla JavaScript
-- Fetch/XHR and browser Performance APIs
-- Cloudflare Speed endpoint for controlled byte transfer
-- Optional IP metadata endpoint
+HTML5, CSS3, JavaScript, Python/Flask, PHP, SQL and Java are now represented with a real role in the architecture. The browser remains responsible for the actual controlled network measurement because it measures the user's browser-to-test-endpoint path.
 
-Python, PHP, Java, and SQL are **not required** for this static browser app. Adding an unnecessary backend would increase attack surface without improving the browser's basic measurement. If a server/API is introduced later, keep it minimal and define its security boundary clearly.
+## Accuracy
+Results are estimates. Wi-Fi conditions, router load, device performance, VPNs, congestion, browser limits and endpoint distance can all affect measurements.
 
-## Legal / trademark note
-PulseNet is an independent project and is not Speedtest.net, Ookla, or an affiliated product. Speedtest and related marks belong to their respective owners. This repository does not intentionally copy Speedtest branding, logos, proprietary code, or trade dress.
+## Legal / responsible use
+PulseNet is independently designed and is not affiliated with Ookla or Speedtest. It does not intentionally copy proprietary code or branding. Review third-party service terms and applicable laws before commercial deployment. Only test networks and infrastructure you are authorized to test.
 
-No software can honestly promise that its owner "cannot be hacked" or "cannot be sued." This project aims to reduce avoidable security risk, respect third-party services and licenses, and avoid misleading guarantees. Review deployment configuration, third-party terms, and applicable laws before commercial use.
-
-## Run locally
-Serve the folder over HTTP rather than opening the HTML file directly:
+## Local development
+Frontend:
 
 ```bash
 python -m http.server 8000
 ```
 
-Open `http://localhost:8000`.
+Python API:
 
-## Deployment
-Deploy as a static HTTPS site using GitHub Pages, Netlify, Cloudflare Pages, or another static host. Keep HTTPS enabled in production.
+```bash
+cd backend/python
+python -m venv .venv
+# activate .venv, then:
+pip install -r requirements.txt
+python app.py
+```
 
-## Responsible use
-Only test networks and devices you are authorized to use. Do not intentionally generate abusive traffic or attempt to overwhelm test infrastructure.
+For production, put the Python/PHP services behind a properly configured HTTPS reverse proxy and firewall. Do not expose development servers directly to the public internet.
 
 ## License
 MIT — see `LICENSE`.
